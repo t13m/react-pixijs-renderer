@@ -9,12 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pixi/events": "^6.5.1",
+    "pixi.js": "^6.5.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-merge-refs": "^2.0.1",
+    "react-reconciler": "^0.29.0",
+    "react-use-measure": "^2.1.1",
+    "zustand": "^3.7.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.15",
     "@types/react-dom": "^18.0.6",
+    "@types/react-reconciler": "^0.28.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "@vitejs/plugin-react": "^2.0.0",
