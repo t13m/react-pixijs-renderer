@@ -16,6 +16,7 @@
     "react-merge-refs": "^2.0.1",
     "react-reconciler": "^0.29.0",
     "react-use-measure": "^2.1.1",
+    "suspend-react": "^0.0.8",
     "zustand": "^3.7.1"
   },
   "devDependencies": {
