@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
 import * as React from 'react';
-import create, { GetState, SetState, UseBoundStore } from 'zustand';
+import create, { GetState, SetState, StoreApi, UseBoundStore } from 'zustand';
 
-import { Instance, InstanceProps, prepare } from './renderer';
+import { prepare } from './renderer';
 
 export type Subscription = {
   ref: React.MutableRefObject<RenderCallback>;
@@ -14,13 +14,12 @@ export type RenderCallback = (state: RootState, delta: number) => void;
 
 export type Renderer = { render: (stage: PIXI.Container) => any };
 
-export const isRenderer = (def: Renderer) => !!def?.render;
+export const isRenderer = (def: any) => !!def?.render;
 
 export type InternalState = {
   active: boolean;
   priority: number;
   frames: number;
-  lastProps: StoreProps;
 
   subscribers: Subscription[];
 
@@ -39,6 +38,7 @@ export type RootState = {
   setSize: (width: number, height: number) => void;
   setFrameloop: (frameloop?: 'always' | 'demand' | 'never') => void;
   internal: InternalState;
+  previousRoot?: UseBoundStore<RootState, StoreApi<RootState>>;
 };
 
 export type StoreProps = {
@@ -48,32 +48,22 @@ export type StoreProps = {
   ticker?: PIXI.Ticker;
 };
 
-export type ApplyProps = (instance: Instance, newProps: InstanceProps) => void;
-
 const context = React.createContext<UseBoundStore<RootState>>(null!);
 
 const createStore = (
-  applyProps: ApplyProps,
   invalidate: (state?: RootState) => void,
   advance: (timestamp: number, runGlobalEffects?: boolean, state?: RootState) => void,
-  props: StoreProps,
 ): UseBoundStore<RootState> => {
-  const { gl, size, frameloop = 'always', ticker = PIXI.Ticker.shared } = props;
-  if (frameloop === 'never') {
-    ticker.autoStart = false;
-    ticker.stop();
-  }
-
   const rootState = create<RootState>((set, get) => {
     return {
-      gl,
+      gl: null as unknown as PIXI.Renderer,
       set,
       get,
       invalidate: () => invalidate(get()),
       advance: (timestamp: number, runGlobalEffects?: boolean) => advance(timestamp, runGlobalEffects, get()),
       stage: prepare(new PIXI.Container()),
-      ticker,
-      frameloop,
+      ticker: new PIXI.Ticker(),
+      frameloop: 'always',
       size: { width: 0, height: 0 },
       setSize: (width: number, height: number) => {
         const size = { width, height };
@@ -84,7 +74,6 @@ const createStore = (
         active: false,
         priority: 0,
         frames: 0,
-        lastProps: props,
         subscribers: [],
         subscribe: (ref: React.MutableRefObject<RenderCallback>, priority = 0) => {
           set(({ internal }) => ({
@@ -121,14 +110,13 @@ const createStore = (
   let oldSize = state.size;
 
   rootState.subscribe(() => {
-    const { size } = rootState.getState();
+    const { size, gl } = rootState.getState();
     if (size !== oldSize) {
       gl.resize(size.width, size.height);
       oldSize = size;
     }
   });
 
-  if (size) state.setSize(size.width, size.height);
   rootState.subscribe((state) => invalidate(state));
   return rootState;
 };

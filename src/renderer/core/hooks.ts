@@ -14,7 +14,7 @@ export function usePixi<T = RootState>(
 ) {
   return useStore()(selector, equalityFn);
 }
-export function useFrame(callback: RenderCallback, renderPriority: number = 0): null {
+export function useFrame(callback: RenderCallback, renderPriority = 0): null {
   const subscribe = useStore().getState().internal.subscribe;
   // Update ref
   const ref = React.useRef<RenderCallback>(callback);

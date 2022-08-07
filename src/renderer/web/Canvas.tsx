@@ -1,10 +1,9 @@
 import * as React from 'react';
+import * as PIXI from 'pixi.js';
+import { pick, omit } from '../core/utils';
 import { mergeRefs } from 'react-merge-refs';
 import useMeasure, { Options as ResizeOptions } from 'react-use-measure';
-import { UseBoundStore } from 'zustand';
-
-import { RootState } from '../core/store';
-import { render, RenderProps, unmountComponentAtNode } from './index';
+import { ReconcilerRoot, extend, createRoot, unmountComponentAtNode, RenderProps } from '../core';
 
 export interface Props
   extends Omit<RenderProps<HTMLCanvasElement>, 'size' | 'events'>,
@@ -21,16 +20,13 @@ type UnblockProps = {
   children: React.ReactNode;
 };
 
-// React currently throws a warning when using useLayoutEffect on the server.
-// To get around it, we can conditionally useEffect on the server (no-op) and
-// useLayoutEffect in the browser.
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+const CANVAS_PROPS: Array<keyof Props> = ['gl', 'frameloop', 'onCreated'];
 
 function Block({ set }: Omit<UnblockProps, 'children'>) {
-  useIsomorphicLayoutEffect(() => {
+  React.useLayoutEffect(() => {
     set(new Promise(() => null));
     return () => set(false);
-  }, []);
+  }, [set]);
   return null;
 }
 
@@ -57,7 +53,11 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, Props>(function Canvas
     debounce: { scroll: 50, resize: 0 },
     ...resize,
   });
+  React.useMemo(() => extend(PIXI), []);
   const canvasRef = React.useRef<HTMLCanvasElement>(null!);
+  const [canvas, setCanvas] = React.useState<HTMLCanvasElement | null>(null);
+  const canvasProps = pick<Props>({ ...props }, CANVAS_PROPS);
+  const divProps = omit<Props>({ ...props }, CANVAS_PROPS);
   const [block, setBlock] = React.useState<SetBlock>(false);
   const [error, setError] = React.useState<any>(false);
   // Suspend this component if block is a promise (2nd run)
@@ -65,27 +65,31 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, Props>(function Canvas
   // Throw exception outwards if anything within canvas throws
   if (error) throw error;
 
-  React.useEffect(() => {
-    onResize?.(width, height);
-  }, [width, height]);
+  const root = React.useRef<ReconcilerRoot<HTMLElement>>(null!);
 
-  // Execute JSX in the reconciler as a layout-effect
-  useIsomorphicLayoutEffect(() => {
-    if (width > 0 && height > 0) {
-      render(
-        <ErrorBoundary set={setError}>
-          <React.Suspense fallback={<Block set={setBlock} />}>{children}</React.Suspense>
-        </ErrorBoundary>,
-        canvasRef.current,
-        { ...props, size: { width, height } },
-      );
-    }
-  }, [width, height, children]);
+  if (width > 0 && height > 0 && canvas) {
+    if (!root.current) root.current = createRoot<HTMLElement>(canvas);
+    root.current.configure({
+      ...canvasProps,
+      onCreated: (state) => {
+        canvasProps.onCreated?.(state);
+      },
+      size: { width, height },
+    });
+    root.current.render(
+      <ErrorBoundary set={setError}>
+        <React.Suspense fallback={<Block set={setBlock} />}>{children}</React.Suspense>
+      </ErrorBoundary>,
+    );
+  }
 
-  useIsomorphicLayoutEffect(() => {
-    const container = canvasRef.current;
-    return () => unmountComponentAtNode(container);
+  React.useLayoutEffect(() => {
+    setCanvas(canvasRef.current);
   }, []);
+
+  React.useEffect(() => {
+    return () => unmountComponentAtNode(canvas!);
+  }, [canvas]);
 
   return (
     <div
@@ -99,7 +103,8 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, Props>(function Canvas
         height: '100%',
         overflow: 'hidden',
         ...style,
-      }}>
+      }}
+      {...divProps}>
       <canvas ref={mergeRefs([canvasRef, forwardedRef])} style={{ display: 'block' }}>
         {fallback}
       </canvas>

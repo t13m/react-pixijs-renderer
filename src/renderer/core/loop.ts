@@ -10,9 +10,9 @@ function createSubs(callback: GlobalRenderCallback, subs: GlobalRenderCallback[]
 }
 
 let i;
-let globalEffects: GlobalRenderCallback[] = [];
-let globalAfterEffects: GlobalRenderCallback[] = [];
-let globalTailEffects: GlobalRenderCallback[] = [];
+const globalEffects: GlobalRenderCallback[] = [];
+const globalAfterEffects: GlobalRenderCallback[] = [];
+const globalTailEffects: GlobalRenderCallback[] = [];
 export const addEffect = (callback: GlobalRenderCallback) => createSubs(callback, globalEffects);
 export const addAfterEffect = (callback: GlobalRenderCallback) => createSubs(callback, globalAfterEffects);
 export const addTail = (callback: GlobalRenderCallback) => createSubs(callback, globalTailEffects);
@@ -78,7 +78,7 @@ export function createLoop<TCanvas>(roots: Map<TCanvas, Root>) {
     }
   }
 
-  function advance(timestamp: number, runGlobalEffects: boolean = true, state?: RootState): void {
+  function advance(timestamp: number, runGlobalEffects = true, state?: RootState): void {
     if (runGlobalEffects) run(globalEffects, timestamp);
     if (!state) roots.forEach((root) => render(timestamp, root.store.getState()));
     else render(timestamp, state);

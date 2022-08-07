@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable @typescript-eslint/no-namespace */
 import * as PIXI from 'pixi.js';
 import * as React from 'react';
 
@@ -64,16 +66,16 @@ export type PrimitiveProps = { object: any } & { [properties: string]: any };
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      pGraphics: GraphicsProps;
-      pText: TextProps;
-      pContainer: ContainerProps;
-      pShader: ShaderProps;
-      pMesh: MeshProps;
-      pGeometry: GeometryProps;
-      pProgram: ProgramProps;
-      pBuffer: BufferProps;
-      pAttribute: AttributeProps;
-      pRectangle: RectangleProps;
+      pixiGraphics: GraphicsProps;
+      pixiText: TextProps;
+      pixiContainer: ContainerProps;
+      pixiShader: ShaderProps;
+      pixiMesh: MeshProps;
+      pixiGeometry: GeometryProps;
+      pixiProgram: ProgramProps;
+      pixiBuffer: BufferProps;
+      pixiAttribute: AttributeProps;
+      pixiRectangle: RectangleProps;
     }
   }
 }

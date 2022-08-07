@@ -6,7 +6,7 @@ import Reconciler from 'react-reconciler';
 import { unstable_IdlePriority as idlePriority, unstable_now as now, unstable_runWithPriority as run } from 'scheduler';
 import { UseBoundStore } from 'zustand';
 
-import { is } from './is';
+import { is } from './utils';
 import { RootState } from './store';
 
 export type Root = {
@@ -130,7 +130,7 @@ function prepare<T = PIXI.DisplayObject>(object: T, state?: Partial<LocalState>)
 }
 
 // *******************************
-function createRenderer<TCanvas>(roots: Map<TCanvas, Root>) {
+function createRenderer<TCanvas>(roots: Map<TCanvas, Root>, getEventPriority?: () => any) {
   // This function prepares a set of changes to be applied to the instance
   function diffProps(
     instance: Instance,
@@ -314,7 +314,7 @@ function createRenderer<TCanvas>(roots: Map<TCanvas, Root>) {
       const object = props.object as Instance;
       instance = prepare<Instance>(object, { root, primitive: true });
     } else {
-      const target = catalogue[name] || (PIXI as any)[name.substring(1).replace('Shape', '')];
+      const target = catalogue[name] || (PIXI as any)[name.substring(4).replace('Shape', '')];
       if (!target)
         throw `${name} is not part of the PIXI namespace! Did you forget to extend? See: https://github.com/pmndrs/react-three-fiber/blob/master/markdown/api.md#using-3rd-party-objects-declaratively`;
 
@@ -721,7 +721,7 @@ function createRenderer<TCanvas>(roots: Map<TCanvas, Root>) {
       return false;
     },
     getCurrentEventPriority() {
-      return DefaultEventPriority;
+      return getEventPriority ? getEventPriority() : DefaultEventPriority;
     },
   });
 
